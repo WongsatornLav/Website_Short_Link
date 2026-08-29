@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 
 export const dynamic = 'force-dynamic';
+
+const redis = Redis.fromEnv();
 
 export async function GET(request, context) {
   try {
@@ -12,7 +14,7 @@ export async function GET(request, context) {
       return NextResponse.redirect(new URL('/', request.url));
     }
 
-    const originalUrl = await kv.get(id);
+    const originalUrl = await redis.get(id);
 
     if (originalUrl) {
       return NextResponse.redirect(new URL(originalUrl));
@@ -20,6 +22,7 @@ export async function GET(request, context) {
 
     return NextResponse.redirect(new URL('/', request.url));
   } catch (error) {
+    console.error('Redirect Error:', error);
     return NextResponse.redirect(new URL('/', request.url));
   }
 }

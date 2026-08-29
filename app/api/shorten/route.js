@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { Redis } from '@upstash/redis';
 
 export const dynamic = 'force-dynamic';
+
+const redis = Redis.fromEnv();
 
 export async function POST(request) {
   try {
@@ -13,15 +15,16 @@ export async function POST(request) {
 
     const id = customId?.trim() || Math.random().toString(36).substring(2, 8);
 
-    const exists = await kv.get(id);
+    const exists = await redis.get(id);
     if (exists) {
       return NextResponse.json({ error: 'ชื่อ Custom นี้มีคนใช้แล้ว โปรดเปลี่ยนใหม่' }, { status: 400 });
     }
 
-    await kv.set(id, url);
+    await redis.set(id, url);
 
     return NextResponse.json({ shortUrl: `/${id}` });
   } catch (error) {
-    return NextResponse.json({ error: 'เกิดข้อผิดพลาดภายในระบบ' }, { status: 500 });
+    console.error('API Error:', error);
+    return NextResponse.json({ error: 'เกิดข้อผิดพลาดภายในระบบ: ' + (error?.message || '') }, { status: 500 });
   }
 }
